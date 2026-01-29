@@ -1,9 +1,9 @@
 Name:       japanese-kana-kbd
-Version:    0.18.0
+Version:    0.18.1
 Release:    1
 Summary:    Japanese Kana Keyboard for Sailfish OS
-License:    MIT
-URL:        https://github.com/user/japanese-kana-kbd
+License:    GPL
+URL:        https://github.com/inugamine/SailfishOS-Japanese-Keyboard
 BuildArch:  noarch
 Requires:   jolla-keyboard
 
