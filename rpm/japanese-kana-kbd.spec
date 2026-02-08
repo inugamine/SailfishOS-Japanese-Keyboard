@@ -1,5 +1,5 @@
 Name:       japanese-kana-kbd
-Version:    0.20.0
+Version:    0.25.0
 Release:    1
 Summary:    Japanese Kana Keyboard for Sailfish OS
 License:    GPL

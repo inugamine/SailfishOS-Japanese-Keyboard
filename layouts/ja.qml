@@ -22,8 +22,27 @@ KeyboardLayout {
     // 変換候補リスト
     property var candidates: []
     
+    // 連文節変換用
+    property int currentSegment: 0  // 現在選択中の文節インデックス
+    property bool isConverting: false  // 変換中かどうか
+    
     // Anthy が使用可能かどうか
     property bool anthyAvailable: false
+    
+    // 絵文字パネル表示
+    property bool showEmojiPanel: false
+    property int emojiCategory: 0
+    
+    // 絵文字データ
+    property var emojiCategories: [
+        { name: "😀", emojis: ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🫢", "🫣", "🤫", "🤔", "🫡", "🤐", "🤨", "😐", "😑", "😶", "🫥", "😏", "😒", "🙄", "😬", "😮‍💨", "🤥", "🫨", "🙂", "🙃", "🫠", "😔", "😟", "😕", "🫤", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "🫩", "😱", "😨", "😰", "😥", "😓", "🫣", "😪", "😴", "😲", "🤤", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑"] },
+        { name: "❤️", emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍", "💔", "❤️‍🔥", "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💌", "💋", "👍", "👎", "✌️", "🤞", "🤟", "🤘", "🤙", "👋", "🤚", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦿", "🦻"] },
+        { name: "🌟", emojis: ["⭐", "🌟", "💫", "✨", "🌈", "☀️", "🌤️", "⛅", "🌥️", "🌦️", "☁️", "🌧️", "⛈️", "🌩️", "⚡", "🔥", "🌪️", "🌈", "❄️", "☃️", "⛄", "🌬️", "🌫️", "🌊", "💧", "🐧", "🐻", "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔", "🐦", "🦆", "🦉", "🦋", "🐝", "🐢", "🐠", "🐙", "🦀", "🦐", "🌸", "🌹", "🌺", "🌻", "🌷", "🌿", "🍀", "🍁", "🍂", "🍃", "🌲", "🌳", "🌴", "🌵"] },
+        { name: "🍔", emojis: ["🍎", "🍏", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍒", "🍑", "🥭", "🍍", "🥥", "🫒", "🥝", "🍅", "🫑", "🥑", "🍆", "🥔", "🥕", "🌽", "🌶️", "🥒", "🥬", "🥦", "🧄", "🧅", "🍄", "🥜", "🌰", "🍞", "🥐", "🥖", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🫔", "🥙", "🧆", "🥚", "🍳", "🥘", "🍲", "🫕", "🍝", "🍜", "🍣", "🍤", "🍙", "🍚", "🍛", "🍘", "🍥", "🥮", "🍢", "🍡", "🍧", "🍨", "🍦", "🍰", "🎂", "🧁", "🍭", "🍬", "🍫", "🍩", "🍪"] },
+        { name: "🏠", emojis: ["🏠", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏩", "🏪", "🏫", "🏬", "🏭", "🏯", "🏰", "🗼", "🗽", "⛪", "🕌", "🛍️", "🎠", "🎡", "🎢", "🚂", "🚃", "🚄", "🚅", "🚆", "🚇", "🚈", "🚉", "🚊", "🚝", "🚞", "🚋", "🚌", "🚍", "🚎", "🚐", "🚑", "🚒", "🚓", "🚔", "🚕", "🚖", "🚗", "🚘", "🚙", "🛺", "🚚", "🚛", "🚜", "🏎️", "🏍️", "🛵", "🦽", "🦼", "🚲", "🛴", "✈️", "🛩️", "🛫", "🛬", "🚀", "🛸", "🚢", "⛵", "🛥️", "🚤", "⛽", "🚦", "🚧"] },
+        { name: "⚽", emojis: ["⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱", "🏓", "🏸", "🥅", "🏒", "🥍", "🏏", "⛳", "🏹", "🎣", "🤿", "🥊", "🥋", "🎽", "🛷", "⛷️", "🎿", "🛶", "🎮", "🕹️", "🎲", "🎨", "🎵", "🎶", "🎹", "🎷", "🎺", "🎸", "🥁", "🎻", "🪕", "🎬", "🎭", "🎤", "🎧", "📷", "📸", "📹", "📺", "📻", "📼", "💿", "📀", "💽", "💾", "💻", "🖥️", "💡", "🔦", "📞", "☎️", "📱", "📲", "⌚", "⏰", "⏱️", "⏲️", "🕰️", "⌛"] },
+        { name: "💡", emojis: ["❤️", "👌", "👍", "✌️", "🙏", "👏", "💯", "✔️", "❌", "❓", "❗", "‼️", "⁉️", "💢", "💥", "💬", "💭", "💤", "👀", "👁️", "🧠", "💀", "☠️", "👻", "👽", "👾", "🤖", "💩", "🎃", "🎄", "🎉", "🎊", "🎎", "🎏", "🏮", "🎁", "🎀", "🎈", "🎋", "🔮", "🧲", "💍", "💎", "🔔", "🔕", "🎶", "🎵", "♾️", "♻️", "🟢", "🟡", "🟠", "🔴", "🔵", "🟪", "🟣", "🟤", "⚫", "⚪", "🔳", "🔲", "◼️", "◻️", "◾", "◽", "⬛", "⬜", "🔶", "🔷", "🔸", "🔹", "🔺", "🔻"] }
+    ]
     
     // Anthy エンジン
     AnthyEngine {
@@ -59,28 +78,104 @@ KeyboardLayout {
     function updateCandidates() {
         if (preedit === "") {
             candidates = []
+            isConverting = false
+            currentSegment = 0
             return
         }
         
-        // Anthy が使用可能なら Anthy を使用
-        if (anthyAvailable) {
+        // ひらがなモードのみ Anthy を使用
+        if (inputMode === "hiragana" && anthyAvailable) {
             if (anthy.convert(preedit)) {
-                // 最初の文節の候補を取得
-                var anthyCandidates = anthy.getCandidates(0)
-                if (anthyCandidates.length > 0) {
-                    candidates = anthyCandidates.slice(0, 10)
+                if (anthy.segments.length > 0) {
+                    isConverting = true
+                    // 現在の文節の候補を取得
+                    candidates = anthy.getCandidates(currentSegment).slice(0, 10)
                     return
                 }
             }
         }
         
-        // Anthy が使えない場合は SKK 辞書にフォールバック
-        candidates = DictEngine.getCandidates(preedit, 10)
+        // 英数・記号モード、または Anthy が使えない場合は変換なし
+        isConverting = false
+        
+        // ひらがなモードのみ SKK 辞書にフォールバック
+        if (inputMode === "hiragana") {
+            candidates = DictEngine.getCandidates(preedit, 10)
+        } else {
+            candidates = []
+        }
+    }
+    
+    // 全文節の変換結果を取得
+    function getConvertedText() {
+        if (!anthyAvailable || anthy.segments.length === 0) {
+            return preedit
+        }
+        var result = ""
+        for (var i = 0; i < anthy.segments.length; i++) {
+            var seg = anthy.segments[i]
+            result += seg.text || ""
+        }
+        return result
+    }
+    
+    // 次の文節へ移動
+    function nextSegment() {
+        if (isConverting && currentSegment < anthy.segments.length - 1) {
+            currentSegment++
+            candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+        }
+    }
+    
+    // 前の文節へ移動
+    function prevSegment() {
+        if (isConverting && currentSegment > 0) {
+            currentSegment--
+            candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+        }
+    }
+    
+    // 左矢印キーの動作
+    function handleLeftKey() {
+        if (isConverting) {
+            // 変換中は前の文節へ
+            prevSegment()
+        } else if (preedit === "") {
+            // 確定状態ならカーソル移動
+            MInputMethodQuick.sendKey(Qt.Key_Left)
+        }
+    }
+    
+    // 右矢印キーの動作
+    function handleRightKey() {
+        if (isConverting) {
+            // 変換中は次の文節へ
+            nextSegment()
+        } else if (preedit === "") {
+            // 確定状態ならカーソル移動
+            MInputMethodQuick.sendKey(Qt.Key_Right)
+        }
+    }
+    
+    // 絵文字パネルの表示切替
+    function toggleEmojiPanel() {
+        showEmojiPanel = !showEmojiPanel
+    }
+    
+    // 絵文字を選択
+    function selectEmoji(emoji) {
+        MInputMethodQuick.sendCommit(emoji)
     }
     
     // 文字を追加する関数（未確定状態で表示）
     function addChar(c) {
         if (c !== "") {
+            // 変換中ならリセット
+            if (isConverting) {
+                anthy.reset()
+                isConverting = false
+                currentSegment = 0
+            }
             preedit += c
             MInputMethodQuick.sendPreedit(preedit)
             updateCandidates()
@@ -90,37 +185,45 @@ KeyboardLayout {
     // 確定する関数
     function commit() {
         if (preedit !== "") {
-            // Anthy で変換中なら Anthy の結果を確定
-            if (anthyAvailable && anthy.segments.length > 0) {
-                var result = anthy.commit()
+            // Anthy で変換中なら全文節を確定
+            if (isConverting && anthyAvailable && anthy.segments.length > 0) {
+                var result = getConvertedText()
                 MInputMethodQuick.sendCommit(result)
+                anthy.reset()
             } else {
                 MInputMethodQuick.sendCommit(preedit)
             }
             preedit = ""
             candidates = []
+            isConverting = false
+            currentSegment = 0
         }
     }
     
-    // 候補を選択して確定
+    // 候補を選択
     function selectCandidate(text) {
         // Anthy で変換中の場合
-        if (anthyAvailable && anthy.segments.length > 0) {
+        if (isConverting && anthyAvailable && anthy.segments.length > 0) {
             // 選択された候補のインデックスを探す
-            var anthyCandidates = anthy.getCandidates(0)
+            var anthyCandidates = anthy.getCandidates(currentSegment)
             var index = anthyCandidates.indexOf(text)
             if (index >= 0) {
-                anthy.selectCandidate(0, index)
+                anthy.selectCandidate(currentSegment, index)
             }
-        }
-        
-        MInputMethodQuick.sendCommit(text)
-        preedit = ""
-        candidates = []
-        
-        // Anthy をリセット
-        if (anthyAvailable) {
-            anthy.reset()
+            
+            // 次の文節へ移動（最後の文節なら確定）
+            if (currentSegment < anthy.segments.length - 1) {
+                currentSegment++
+                candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+            } else {
+                // 最後の文節なので全体を確定
+                commit()
+            }
+        } else {
+            // Anthy を使っていない場合は従来通り
+            MInputMethodQuick.sendCommit(text)
+            preedit = ""
+            candidates = []
         }
     }
     
@@ -205,6 +308,12 @@ KeyboardLayout {
     // バックスペース（preeditから1文字削除、空なら通常のBackspace）
     function backspace() {
         if (preedit !== "") {
+            // 変換中ならリセット
+            if (isConverting) {
+                anthy.reset()
+                isConverting = false
+                currentSegment = 0
+            }
             preedit = preedit.slice(0, -1)
             MInputMethodQuick.sendPreedit(preedit)
             updateCandidates()
@@ -217,11 +326,137 @@ KeyboardLayout {
         id: column
         width: parent.width
 
+        // ==================== 連文節変換表示バー ====================
+        Item {
+            width: parent.width
+            height: isConverting ? geometry.keyHeightPortrait * 0.6 : 0
+            visible: isConverting
+            
+            Rectangle {
+                anchors.fill: parent
+                color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+            }
+            
+            Row {
+                anchors.centerIn: parent
+                spacing: 2
+                
+                Repeater {
+                    model: anthyAvailable ? anthy.segments : []
+                    
+                    delegate: Rectangle {
+                        height: geometry.keyHeightPortrait * 0.5
+                        width: segmentText.width + Theme.paddingMedium
+                        color: index === currentSegment ? Theme.highlightBackgroundColor : "transparent"
+                        radius: Theme.paddingSmall / 2
+                        
+                        Text {
+                            id: segmentText
+                            anchors.centerIn: parent
+                            text: modelData.text || ""
+                            color: index === currentSegment ? Theme.highlightColor : Theme.primaryColor
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.bold: index === currentSegment
+                        }
+                        
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                currentSegment = index
+                                candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // ==================== 絵文字パネル ====================
+        Item {
+            width: parent.width
+            height: showEmojiPanel ? geometry.keyHeightPortrait * 3 : 0
+            visible: showEmojiPanel
+            
+            Rectangle {
+                anchors.fill: parent
+                color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+            }
+            
+            Column {
+                anchors.fill: parent
+                
+                // カテゴリタブ
+                Row {
+                    width: parent.width
+                    height: geometry.keyHeightPortrait * 0.6
+                    
+                    Repeater {
+                        model: emojiCategories
+                        
+                        delegate: Rectangle {
+                            width: parent.width / emojiCategories.length
+                            height: parent.height
+                            color: index === emojiCategory ? Theme.highlightBackgroundColor : "transparent"
+                            
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData.name
+                                font.pixelSize: Theme.fontSizeMedium
+                            }
+                            
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: emojiCategory = index
+                            }
+                        }
+                    }
+                }
+                
+                // 絵文字グリッド（スクロール可能）
+                Flickable {
+                    width: parent.width
+                    height: geometry.keyHeightPortrait * 2.4
+                    contentWidth: width
+                    contentHeight: emojiGrid.height
+                    clip: true
+                    flickableDirection: Flickable.VerticalFlick
+                    
+                    Grid {
+                        id: emojiGrid
+                        width: parent.width
+                        columns: 8
+                        
+                        Repeater {
+                            model: emojiCategories[emojiCategory].emojis
+                            
+                            delegate: Rectangle {
+                                width: main.width / 8
+                                height: geometry.keyHeightPortrait * 0.8
+                                color: emojiMouseArea.pressed ? Theme.highlightBackgroundColor : "transparent"
+                                
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData
+                                    font.pixelSize: Theme.fontSizeLarge
+                                }
+                                
+                                MouseArea {
+                                    id: emojiMouseArea
+                                    anchors.fill: parent
+                                    onClicked: main.selectEmoji(modelData)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         // ==================== 変換候補バー ====================
         Item {
             width: parent.width
-            height: candidates.length > 0 ? geometry.keyHeightPortrait * 0.8 : 0
-            visible: candidates.length > 0
+            height: (candidates.length > 0 && !showEmojiPanel) ? geometry.keyHeightPortrait * 0.8 : 0
+            visible: candidates.length > 0 && !showEmojiPanel
             
             Rectangle {
                 anchors.fill: parent
@@ -394,27 +629,12 @@ KeyboardLayout {
                     width: parent.width * 4 / 5
                     height: geometry.keyHeightPortrait
 
-                    // カーソル左
+                    // 絵文字パネルボタン
                     FunctionKey {
-                        width: parent.width / 8
+                        width: parent.width / 4
                         height: parent.height
-                        caption: "←"
-                        repeat: true
-                        onClicked: {
-                            main.commit()
-                            MInputMethodQuick.sendKey(Qt.Key_Left)
-                        }
-                    }
-                    // カーソル右
-                    FunctionKey {
-                        width: parent.width / 8
-                        height: parent.height
-                        caption: "→"
-                        repeat: true
-                        onClicked: {
-                            main.commit()
-                            MInputMethodQuick.sendKey(Qt.Key_Right)
-                        }
+                        caption: showEmojiPanel ? "✕" : "😀"
+                        onClicked: main.toggleEmojiPanel()
                     }
                     // 濁点/半濁点/小文字
                     FunctionKey {
@@ -593,27 +813,12 @@ KeyboardLayout {
                     width: parent.width * 4 / 5
                     height: geometry.keyHeightPortrait
 
-                    // カーソル左
+                    // 絵文字パネルボタン
                     FunctionKey {
-                        width: parent.width / 8
+                        width: parent.width / 4
                         height: parent.height
-                        caption: "←"
-                        repeat: true
-                        onClicked: {
-                            main.commit()
-                            MInputMethodQuick.sendKey(Qt.Key_Left)
-                        }
-                    }
-                    // カーソル右
-                    FunctionKey {
-                        width: parent.width / 8
-                        height: parent.height
-                        caption: "→"
-                        repeat: true
-                        onClicked: {
-                            main.commit()
-                            MInputMethodQuick.sendKey(Qt.Key_Right)
-                        }
+                        caption: showEmojiPanel ? "✕" : "😀"
+                        onClicked: main.toggleEmojiPanel()
                     }
                     FunctionKey {
                         width: parent.width / 4
@@ -792,27 +997,12 @@ KeyboardLayout {
                     width: parent.width * 4 / 5
                     height: geometry.keyHeightPortrait
 
-                    // カーソル左
+                    // 絵文字パネルボタン
                     FunctionKey {
-                        width: parent.width / 8
+                        width: parent.width / 4
                         height: parent.height
-                        caption: "←"
-                        repeat: true
-                        onClicked: {
-                            main.commit()
-                            MInputMethodQuick.sendKey(Qt.Key_Left)
-                        }
-                    }
-                    // カーソル右
-                    FunctionKey {
-                        width: parent.width / 8
-                        height: parent.height
-                        caption: "→"
-                        repeat: true
-                        onClicked: {
-                            main.commit()
-                            MInputMethodQuick.sendKey(Qt.Key_Right)
-                        }
+                        caption: showEmojiPanel ? "✕" : "😀"
+                        onClicked: main.toggleEmojiPanel()
                     }
                     FlickKey {
                         width: parent.width / 4
