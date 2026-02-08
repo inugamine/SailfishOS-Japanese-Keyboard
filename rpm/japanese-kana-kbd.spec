@@ -1,11 +1,12 @@
 Name:       japanese-kana-kbd
-Version:    0.18.1
+Version:    0.20.0
 Release:    1
 Summary:    Japanese Kana Keyboard for Sailfish OS
 License:    GPL
 URL:        https://github.com/inugamine/SailfishOS-Japanese-Keyboard
 BuildArch:  noarch
 Requires:   jolla-keyboard
+Requires:   anthy-qml-plugin
 
 %description
 Japanese Hiragana flick keyboard layout for Sailfish OS.
@@ -13,7 +14,7 @@ Features:
 - Flick input for hiragana
 - Dakuten/Handakuten conversion
 - Katakana conversion
-- Dictionary-based kanji conversion (SKK dictionary)
+- Anthy-based kanji conversion (with SKK dictionary fallback)
 
 %prep
 # nothing to do

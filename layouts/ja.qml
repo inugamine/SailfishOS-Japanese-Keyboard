@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import com.meego.maliitquick 1.0
+import jp.anthy 1.0
 import ".."
 import "./ja"
 import "./ja/KanaConverter.js" as KanaConverter
@@ -21,7 +22,19 @@ KeyboardLayout {
     // 変換候補リスト
     property var candidates: []
     
-    // 辞書読み込み
+    // Anthy が使用可能かどうか
+    property bool anthyAvailable: false
+    
+    // Anthy エンジン
+    AnthyEngine {
+        id: anthy
+        Component.onCompleted: {
+            anthyAvailable = true
+            console.log("AnthyEngine initialized")
+        }
+    }
+    
+    // 辞書読み込み（フォールバック用）
     Component.onCompleted: {
         loadDictionary()
     }
@@ -31,9 +44,9 @@ KeyboardLayout {
         xhr.open("GET", "ja/dict/SKK-JISYO.L.utf8")
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200 || xhr.status === 0) {  // 0 はローカルファイル
+                if (xhr.status === 200 || xhr.status === 0) {
                     DictEngine.loadDictionary(xhr.responseText)
-                    console.log("Dictionary loaded successfully")
+                    console.log("Dictionary loaded successfully (fallback)")
                 } else {
                     console.log("Failed to load dictionary: " + xhr.status)
                 }
@@ -46,9 +59,23 @@ KeyboardLayout {
     function updateCandidates() {
         if (preedit === "") {
             candidates = []
-        } else {
-            candidates = DictEngine.getCandidates(preedit, 10)
+            return
         }
+        
+        // Anthy が使用可能なら Anthy を使用
+        if (anthyAvailable) {
+            if (anthy.convert(preedit)) {
+                // 最初の文節の候補を取得
+                var anthyCandidates = anthy.getCandidates(0)
+                if (anthyCandidates.length > 0) {
+                    candidates = anthyCandidates.slice(0, 10)
+                    return
+                }
+            }
+        }
+        
+        // Anthy が使えない場合は SKK 辞書にフォールバック
+        candidates = DictEngine.getCandidates(preedit, 10)
     }
     
     // 文字を追加する関数（未確定状態で表示）
@@ -63,7 +90,13 @@ KeyboardLayout {
     // 確定する関数
     function commit() {
         if (preedit !== "") {
-            MInputMethodQuick.sendCommit(preedit)
+            // Anthy で変換中なら Anthy の結果を確定
+            if (anthyAvailable && anthy.segments.length > 0) {
+                var result = anthy.commit()
+                MInputMethodQuick.sendCommit(result)
+            } else {
+                MInputMethodQuick.sendCommit(preedit)
+            }
             preedit = ""
             candidates = []
         }
@@ -71,9 +104,24 @@ KeyboardLayout {
     
     // 候補を選択して確定
     function selectCandidate(text) {
+        // Anthy で変換中の場合
+        if (anthyAvailable && anthy.segments.length > 0) {
+            // 選択された候補のインデックスを探す
+            var anthyCandidates = anthy.getCandidates(0)
+            var index = anthyCandidates.indexOf(text)
+            if (index >= 0) {
+                anthy.selectCandidate(0, index)
+            }
+        }
+        
         MInputMethodQuick.sendCommit(text)
         preedit = ""
         candidates = []
+        
+        // Anthy をリセット
+        if (anthyAvailable) {
+            anthy.reset()
+        }
     }
     
     // 濁点/半濁点/小文字変換（preeditの最後の文字）
@@ -253,6 +301,7 @@ KeyboardLayout {
                     width: parent.width / 5
                     height: parent.height
                     caption: "⌫"
+                    repeat: true
                     onClicked: main.backspace()
                 }
             }
@@ -350,6 +399,7 @@ KeyboardLayout {
                         width: parent.width / 8
                         height: parent.height
                         caption: "←"
+                        repeat: true
                         onClicked: {
                             main.commit()
                             MInputMethodQuick.sendKey(Qt.Key_Left)
@@ -360,6 +410,7 @@ KeyboardLayout {
                         width: parent.width / 8
                         height: parent.height
                         caption: "→"
+                        repeat: true
                         onClicked: {
                             main.commit()
                             MInputMethodQuick.sendKey(Qt.Key_Right)
@@ -447,6 +498,7 @@ KeyboardLayout {
                     width: parent.width / 5
                     height: parent.height
                     caption: "⌫"
+                    repeat: true
                     onClicked: main.backspace()
                 }
             }
@@ -546,6 +598,7 @@ KeyboardLayout {
                         width: parent.width / 8
                         height: parent.height
                         caption: "←"
+                        repeat: true
                         onClicked: {
                             main.commit()
                             MInputMethodQuick.sendKey(Qt.Key_Left)
@@ -556,6 +609,7 @@ KeyboardLayout {
                         width: parent.width / 8
                         height: parent.height
                         caption: "→"
+                        repeat: true
                         onClicked: {
                             main.commit()
                             MInputMethodQuick.sendKey(Qt.Key_Right)
@@ -644,6 +698,7 @@ KeyboardLayout {
                     width: parent.width / 5
                     height: parent.height
                     caption: "⌫"
+                    repeat: true
                     onClicked: main.backspace()
                 }
             }
@@ -742,6 +797,7 @@ KeyboardLayout {
                         width: parent.width / 8
                         height: parent.height
                         caption: "←"
+                        repeat: true
                         onClicked: {
                             main.commit()
                             MInputMethodQuick.sendKey(Qt.Key_Left)
@@ -752,6 +808,7 @@ KeyboardLayout {
                         width: parent.width / 8
                         height: parent.height
                         caption: "→"
+                        repeat: true
                         onClicked: {
                             main.commit()
                             MInputMethodQuick.sendKey(Qt.Key_Right)
