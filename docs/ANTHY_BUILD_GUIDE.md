@@ -185,7 +185,7 @@ sudo ln -sf libanthyinput-unicode.so.0.0.0 libanthyinput-unicode.so
 
 ```bash
 cd /home/mersdk
-git clone <anthy-qml-plugin リポジトリ>
+git clone https://github.com/inugamine/anthy-qml-plugin.git
 cd anthy-qml-plugin
 mb2 -t SailfishOS-5.0.0.62EA-aarch64 build
 ```
