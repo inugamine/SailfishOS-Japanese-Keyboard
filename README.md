@@ -1,4 +1,5 @@
 # japanese-kana-kbd
+Japanese flick keyboard for Sailfish OS / Sailfish OS 日本語フリックキーボード
 
 Sailfish OS 向けの日本語フリック入力キーボードです。
 
