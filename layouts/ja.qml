@@ -53,12 +53,20 @@ KeyboardLayout {
         }
     }
     
-    // 入力欄からフォーカスが外れたら確定
+    // 入力欄からフォーカスが外れたら状態をリセット
+    // ※システム側が preedit を自動確定するため、ここでは状態のみクリア
     Connections {
         target: MInputMethodQuick
         onActiveChanged: {
-            if (!MInputMethodQuick.active && preedit !== "") {
-                commit()
+            if (!MInputMethodQuick.active) {
+                // 内部状態のみリセット（commit は呼ばない）
+                preedit = ""
+                candidates = []
+                isConverting = false
+                currentSegment = 0
+                if (anthyAvailable) {
+                    anthy.reset()
+                }
             }
         }
     }
