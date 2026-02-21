@@ -53,6 +53,16 @@ KeyboardLayout {
         }
     }
     
+    // 入力欄からフォーカスが外れたら確定
+    Connections {
+        target: MInputMethodQuick
+        onActiveChanged: {
+            if (!MInputMethodQuick.active && preedit !== "") {
+                commit()
+            }
+        }
+    }
+    
     // 辞書読み込み（フォールバック用）
     Component.onCompleted: {
         loadDictionary()
@@ -106,6 +116,10 @@ KeyboardLayout {
             if (anthy.convert(preedit)) {
                 if (anthy.segments.length > 0) {
                     isConverting = true
+                    // 初期状態では全文節をひらがなに設定
+                    for (var i = 0; i < anthy.segments.length; i++) {
+                        anthy.selectCandidate(i, -3)  // NTH_HIRAGANA_CANDIDATE
+                    }
                     candidates = getCandidatesWithHiragana(currentSegment)
                     return
                 }
@@ -136,6 +150,51 @@ KeyboardLayout {
         return result
     }
     
+    // 文節を縮める
+    function shrinkSegment() {
+        if (isConverting && anthyAvailable) {
+            anthy.resizeSegment(currentSegment, -1)
+            // 全文節をひらがなに再設定
+            for (var i = 0; i < anthy.segments.length; i++) {
+                anthy.selectCandidate(i, -3)  // NTH_HIRAGANA_CANDIDATE
+            }
+            candidates = getCandidatesWithHiragana(currentSegment)
+        }
+    }
+    
+    // 文節を伸ばす
+    function expandSegment() {
+        if (isConverting && anthyAvailable) {
+            anthy.resizeSegment(currentSegment, 1)
+            // 全文節をひらがなに再設定
+            for (var i = 0; i < anthy.segments.length; i++) {
+                anthy.selectCandidate(i, -3)  // NTH_HIRAGANA_CANDIDATE
+            }
+            candidates = getCandidatesWithHiragana(currentSegment)
+        }
+    }
+    
+    // 現在の文節区切りを表示用に取得
+    function getSegmentDisplay() {
+        if (!isConverting || !anthyAvailable || anthy.segments.length === 0) {
+            return preedit
+        }
+        var result = ""
+        for (var i = 0; i < anthy.segments.length; i++) {
+            if (i === currentSegment) {
+                result += "["
+            }
+            result += getSegmentHiragana(i)
+            if (i === currentSegment) {
+                result += "]"
+            }
+            if (i < anthy.segments.length - 1) {
+                result += "|"
+            }
+        }
+        return result
+    }
+    
     // 次の文節へ移動
     function nextSegment() {
         if (isConverting && currentSegment < anthy.segments.length - 1) {
@@ -149,28 +208,6 @@ KeyboardLayout {
         if (isConverting && currentSegment > 0) {
             currentSegment--
             candidates = getCandidatesWithHiragana(currentSegment)
-        }
-    }
-    
-    // 左矢印キーの動作
-    function handleLeftKey() {
-        if (isConverting) {
-            // 変換中は前の文節へ
-            prevSegment()
-        } else if (preedit === "") {
-            // 確定状態ならカーソル移動
-            MInputMethodQuick.sendKey(Qt.Key_Left)
-        }
-    }
-    
-    // 右矢印キーの動作
-    function handleRightKey() {
-        if (isConverting) {
-            // 変換中は次の文節へ
-            nextSegment()
-        } else if (preedit === "") {
-            // 確定状態ならカーソル移動
-            MInputMethodQuick.sendKey(Qt.Key_Right)
         }
     }
     
@@ -202,18 +239,23 @@ KeyboardLayout {
     // 確定する関数
     function commit() {
         if (preedit !== "") {
+            var textToCommit = ""
+            
             // Anthy で変換中なら全文節を確定
             if (isConverting && anthyAvailable && anthy.segments.length > 0) {
-                var result = getConvertedText()
-                MInputMethodQuick.sendCommit(result)
+                textToCommit = getConvertedText()
                 anthy.reset()
             } else {
-                MInputMethodQuick.sendCommit(preedit)
+                textToCommit = preedit
             }
+            
+            // 先に preedit をクリアしてからコミット
             preedit = ""
             candidates = []
             isConverting = false
             currentSegment = 0
+            MInputMethodQuick.sendPreedit("")  // preedit をクリア
+            MInputMethodQuick.sendCommit(textToCommit)
         }
     }
     
@@ -431,10 +473,10 @@ KeyboardLayout {
             }
         }
         
-        // ==================== 変換候補バー ====================
+        // ==================== 変換候補バー（上段） ====================
         Item {
             width: parent.width
-            height: (candidates.length > 0 && !showEmojiPanel) ? geometry.keyHeightPortrait * 0.8 : 0
+            height: (candidates.length > 0 && !showEmojiPanel) ? geometry.keyHeightPortrait * 0.7 : 0
             visible: candidates.length > 0 && !showEmojiPanel
             
             Rectangle {
@@ -442,59 +484,10 @@ KeyboardLayout {
                 color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
             }
             
-            // 左矢印（前の文節へ）
-            Rectangle {
-                id: prevSegmentBtn
-                width: (isConverting && currentSegment > 0) ? geometry.keyHeightPortrait * 0.8 : 0
-                height: parent.height
-                anchors.left: parent.left
-                color: prevSegmentArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.3)
-                visible: isConverting && currentSegment > 0
-                
-                Text {
-                    anchors.centerIn: parent
-                    text: "◀"
-                    color: Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeMedium
-                }
-                
-                MouseArea {
-                    id: prevSegmentArea
-                    anchors.fill: parent
-                    onClicked: main.prevSegment()
-                }
-            }
-            
-            // 右矢印（次の文節へ）
-            Rectangle {
-                id: nextSegmentBtn
-                width: (isConverting && anthyAvailable && currentSegment < anthy.segments.length - 1) ? geometry.keyHeightPortrait * 0.8 : 0
-                height: parent.height
-                anchors.right: parent.right
-                color: nextSegmentArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.3)
-                visible: isConverting && anthyAvailable && currentSegment < anthy.segments.length - 1
-                
-                Text {
-                    anchors.centerIn: parent
-                    text: "▶"
-                    color: Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeMedium
-                }
-                
-                MouseArea {
-                    id: nextSegmentArea
-                    anchors.fill: parent
-                    onClicked: main.nextSegment()
-                }
-            }
-            
             // 候補リスト
             ListView {
                 id: candidateList
-                anchors.left: prevSegmentBtn.visible ? prevSegmentBtn.right : parent.left
-                anchors.right: nextSegmentBtn.visible ? nextSegmentBtn.left : parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                anchors.fill: parent
                 anchors.leftMargin: Theme.paddingSmall
                 anchors.rightMargin: Theme.paddingSmall
                 orientation: ListView.Horizontal
@@ -521,6 +514,95 @@ KeyboardLayout {
                         id: candidateMouseArea
                         anchors.fill: parent
                         onClicked: main.selectCandidate(modelData)
+                    }
+                }
+            }
+        }
+
+        // ==================== 文節操作バー（下段） ====================
+        Item {
+            width: parent.width
+            height: (isConverting && anthyAvailable && anthy.segments.length > 0 && !showEmojiPanel) ? geometry.keyHeightPortrait * 0.6 : 0
+            visible: isConverting && anthyAvailable && anthy.segments.length > 0 && !showEmojiPanel
+            
+            Rectangle {
+                anchors.fill: parent
+                color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+            }
+            
+            Row {
+                anchors.centerIn: parent
+                spacing: Theme.paddingSmall
+                
+                // 縮小ボタン
+                Rectangle {
+                    width: geometry.keyHeightPortrait * 0.8
+                    height: geometry.keyHeightPortrait * 0.5
+                    color: shrinkArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.3)
+                    radius: Theme.paddingSmall / 2
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "◁"
+                        color: Theme.primaryColor
+                        font.pixelSize: Theme.fontSizeMedium
+                    }
+                    
+                    MouseArea {
+                        id: shrinkArea
+                        anchors.fill: parent
+                        onClicked: main.shrinkSegment()
+                    }
+                }
+                
+                // 文節区切り表示（タップで次の文節へ）
+                Rectangle {
+                    width: segmentDisplayText.width + Theme.paddingLarge
+                    height: geometry.keyHeightPortrait * 0.5
+                    color: segmentDisplayArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.2)
+                    radius: Theme.paddingSmall / 2
+                    
+                    Text {
+                        id: segmentDisplayText
+                        anchors.centerIn: parent
+                        text: getSegmentDisplay()
+                        color: Theme.highlightColor
+                        font.pixelSize: Theme.fontSizeSmall
+                    }
+                    
+                    MouseArea {
+                        id: segmentDisplayArea
+                        anchors.fill: parent
+                        onClicked: {
+                            // タップで次の文節へ（最後なら最初に戻る）
+                            if (currentSegment < anthy.segments.length - 1) {
+                                currentSegment++
+                            } else {
+                                currentSegment = 0
+                            }
+                            candidates = getCandidatesWithHiragana(currentSegment)
+                        }
+                    }
+                }
+                
+                // 拡大ボタン
+                Rectangle {
+                    width: geometry.keyHeightPortrait * 0.8
+                    height: geometry.keyHeightPortrait * 0.5
+                    color: expandArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.3)
+                    radius: Theme.paddingSmall / 2
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: "▷"
+                        color: Theme.primaryColor
+                        font.pixelSize: Theme.fontSizeMedium
+                    }
+                    
+                    MouseArea {
+                        id: expandArea
+                        anchors.fill: parent
+                        onClicked: main.expandSegment()
                     }
                 }
             }
