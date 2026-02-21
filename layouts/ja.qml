@@ -74,6 +74,24 @@ KeyboardLayout {
         xhr.send()
     }
     
+    // 現在の文節のひらがなを取得
+    function getSegmentHiragana(segmentIndex) {
+        var start = 0
+        for (var i = 0; i < segmentIndex; i++) {
+            start += anthy.segments[i].length
+        }
+        var length = anthy.segments[segmentIndex].length
+        return preedit.substring(start, start + length)
+    }
+    
+    // 文節の候補を取得（ひらがなを先頭に追加）
+    function getCandidatesWithHiragana(segmentIndex) {
+        var hiragana = getSegmentHiragana(segmentIndex)
+        var anthyCandidates = anthy.getCandidates(segmentIndex)
+        var filtered = anthyCandidates.filter(function(c) { return c !== hiragana })
+        return [hiragana].concat(filtered.slice(0, 9))
+    }
+    
     // 変換候補を更新
     function updateCandidates() {
         if (preedit === "") {
@@ -88,8 +106,7 @@ KeyboardLayout {
             if (anthy.convert(preedit)) {
                 if (anthy.segments.length > 0) {
                     isConverting = true
-                    // 現在の文節の候補を取得
-                    candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+                    candidates = getCandidatesWithHiragana(currentSegment)
                     return
                 }
             }
@@ -123,7 +140,7 @@ KeyboardLayout {
     function nextSegment() {
         if (isConverting && currentSegment < anthy.segments.length - 1) {
             currentSegment++
-            candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+            candidates = getCandidatesWithHiragana(currentSegment)
         }
     }
     
@@ -131,7 +148,7 @@ KeyboardLayout {
     function prevSegment() {
         if (isConverting && currentSegment > 0) {
             currentSegment--
-            candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+            candidates = getCandidatesWithHiragana(currentSegment)
         }
     }
     
@@ -204,17 +221,24 @@ KeyboardLayout {
     function selectCandidate(text) {
         // Anthy で変換中の場合
         if (isConverting && anthyAvailable && anthy.segments.length > 0) {
-            // 選択された候補のインデックスを探す
-            var anthyCandidates = anthy.getCandidates(currentSegment)
-            var index = anthyCandidates.indexOf(text)
-            if (index >= 0) {
-                anthy.selectCandidate(currentSegment, index)
+            // ひらがなが選択されたかチェック
+            var hiragana = getSegmentHiragana(currentSegment)
+            if (text === hiragana) {
+                // ひらがなのまま（変換しない）
+                anthy.selectCandidate(currentSegment, -3)  // NTH_HIRAGANA_CANDIDATE
+            } else {
+                // Anthy の候補からインデックスを探す
+                var anthyCandidates = anthy.getCandidates(currentSegment)
+                var index = anthyCandidates.indexOf(text)
+                if (index >= 0) {
+                    anthy.selectCandidate(currentSegment, index)
+                }
             }
             
             // 次の文節へ移動（最後の文節なら確定）
             if (currentSegment < anthy.segments.length - 1) {
                 currentSegment++
-                candidates = anthy.getCandidates(currentSegment).slice(0, 10)
+                candidates = getCandidatesWithHiragana(currentSegment)
             } else {
                 // 最後の文節なので全体を確定
                 commit()
@@ -326,51 +350,6 @@ KeyboardLayout {
         id: column
         width: parent.width
 
-        // ==================== 連文節変換表示バー ====================
-        Item {
-            width: parent.width
-            height: isConverting ? geometry.keyHeightPortrait * 0.6 : 0
-            visible: isConverting
-            
-            Rectangle {
-                anchors.fill: parent
-                color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
-            }
-            
-            Row {
-                anchors.centerIn: parent
-                spacing: 2
-                
-                Repeater {
-                    model: anthyAvailable ? anthy.segments : []
-                    
-                    delegate: Rectangle {
-                        height: geometry.keyHeightPortrait * 0.5
-                        width: segmentText.width + Theme.paddingMedium
-                        color: index === currentSegment ? Theme.highlightBackgroundColor : "transparent"
-                        radius: Theme.paddingSmall / 2
-                        
-                        Text {
-                            id: segmentText
-                            anchors.centerIn: parent
-                            text: modelData.text || ""
-                            color: index === currentSegment ? Theme.highlightColor : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.bold: index === currentSegment
-                        }
-                        
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                currentSegment = index
-                                candidates = anthy.getCandidates(currentSegment).slice(0, 10)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
         // ==================== 絵文字パネル ====================
         Item {
             width: parent.width
@@ -463,9 +442,59 @@ KeyboardLayout {
                 color: Theme.rgba(Theme.highlightBackgroundColor, 0.1)
             }
             
+            // 左矢印（前の文節へ）
+            Rectangle {
+                id: prevSegmentBtn
+                width: (isConverting && currentSegment > 0) ? geometry.keyHeightPortrait * 0.8 : 0
+                height: parent.height
+                anchors.left: parent.left
+                color: prevSegmentArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.3)
+                visible: isConverting && currentSegment > 0
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "◀"
+                    color: Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeMedium
+                }
+                
+                MouseArea {
+                    id: prevSegmentArea
+                    anchors.fill: parent
+                    onClicked: main.prevSegment()
+                }
+            }
+            
+            // 右矢印（次の文節へ）
+            Rectangle {
+                id: nextSegmentBtn
+                width: (isConverting && anthyAvailable && currentSegment < anthy.segments.length - 1) ? geometry.keyHeightPortrait * 0.8 : 0
+                height: parent.height
+                anchors.right: parent.right
+                color: nextSegmentArea.pressed ? Theme.highlightBackgroundColor : Theme.rgba(Theme.highlightBackgroundColor, 0.3)
+                visible: isConverting && anthyAvailable && currentSegment < anthy.segments.length - 1
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: "▶"
+                    color: Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeMedium
+                }
+                
+                MouseArea {
+                    id: nextSegmentArea
+                    anchors.fill: parent
+                    onClicked: main.nextSegment()
+                }
+            }
+            
+            // 候補リスト
             ListView {
                 id: candidateList
-                anchors.fill: parent
+                anchors.left: prevSegmentBtn.visible ? prevSegmentBtn.right : parent.left
+                anchors.right: nextSegmentBtn.visible ? nextSegmentBtn.left : parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
                 anchors.leftMargin: Theme.paddingSmall
                 anchors.rightMargin: Theme.paddingSmall
                 orientation: ListView.Horizontal
@@ -475,7 +504,7 @@ KeyboardLayout {
                 model: candidates
                 
                 delegate: Rectangle {
-                    height: parent.height
+                    height: candidateList.height
                     width: candidateText.width + Theme.paddingLarge
                     color: candidateMouseArea.pressed ? Theme.highlightBackgroundColor : "transparent"
                     radius: Theme.paddingSmall
