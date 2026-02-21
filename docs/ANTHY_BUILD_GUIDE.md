@@ -30,7 +30,7 @@ ssh -p 2222 mersdk@localhost
 ```bash
 ssh defaultuser@192.168.x.x
 ```
-> Sailfish 端末の本体設定 → Developer tools → Developer mode をオンにして、Remote connection のパスワード設定などを行ってください。
+> Sailfish 端末の本体設定 → Developer tools → Developer mode をオンにして、SSH するための Remote connection のパスワード設定などを行ってください。
 > 頑張れば USB 経由で SSH 接続ができるようになるようです。
 
 ## 前提条件
