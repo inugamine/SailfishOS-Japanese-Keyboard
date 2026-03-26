@@ -2,6 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import com.meego.maliitquick 1.0
 import com.jolla.keyboard 1.0
+import QtFeedback 5.0
 
 // フリック入力対応キー
 Item {
@@ -18,6 +19,12 @@ Item {
     
     // 文字が選択されたときのシグナル
     signal charSelected(string selectedChar)
+    
+    // 振動フィードバック
+    ThemeEffect {
+        id: keyEffect
+        effect: ThemeEffect.Press
+    }
     
     // キーの背景
     Rectangle {
@@ -60,6 +67,7 @@ Item {
         property real startY: 0
         
         onPressed: {
+            keyEffect.play()
             startX = mouse.x
             startY = mouse.y
         }

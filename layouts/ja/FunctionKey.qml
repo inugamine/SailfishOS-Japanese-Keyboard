@@ -2,6 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import com.meego.maliitquick 1.0
 import com.jolla.keyboard 1.0
+import QtFeedback 5.0
 
 // 機能キー（カーソル移動、モード切替など）
 Item {
@@ -13,6 +14,12 @@ Item {
     property int repeatInterval: 50  // リピート間隔（ミリ秒）
     
     signal clicked()
+    
+    // 振動フィードバック
+    ThemeEffect {
+        id: keyEffect
+        effect: ThemeEffect.Press
+    }
     
     // 長押し開始タイマー
     Timer {
@@ -76,6 +83,7 @@ Item {
         anchors.fill: parent
         
         onPressed: {
+            keyEffect.play()
             if (funcKey.repeat) {
                 repeatDelayTimer.start()
             }
